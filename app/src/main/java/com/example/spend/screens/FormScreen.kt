@@ -15,9 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import java.util.Calendar
 import androidx.compose.runtime.Composable
+import android.widget.Toast
 
 @Composable
-fun FormScreen() {
+fun FormScreen(onReturnHome: () -> Unit) {
     var amount by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf("Select Category") }
@@ -39,13 +40,13 @@ fun FormScreen() {
             .padding(16.dp)
     ) {
         // Return Button
-        Button(onClick = { /* Return placeholder */ }) {
+        Button(onClick = { onReturnHome() }) {
             Text("Return")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(text = "Data Entry Form")
+        Text(text = "Money")
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -93,7 +94,15 @@ fun FormScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { /* Save placeholder */ },
+            onClick = { 
+                val amountValue = amount.toDoubleOrNull()
+                if (amountValue != null && selectedCategory != "Select Category" && dataTest != "Select Date") {
+                    val message = "Date: $dataText\nAmount: $amountValue\nCategory: $selectedCategory"
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeTest(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
+                }
+            },
             modifier = Modifier.align(Alignment.End)
         ) {
             Text("Save")
