@@ -38,7 +38,11 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
         composable("form") {
-            FormScreen()
+            FormScreen(
+                onReturnHome = {
+                    navController.popBackStack()
+                }
+            )
         }
         composable("spending") {
             SpendingScreen()
