@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.spend"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -70,4 +70,13 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     // Ensure your test dependencies use the same Compose BOM version
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
+    // On-device text recognition
+    implementation ("com.google.mlkit:text-recognition:16.0.0")
+    // core-ktx for viewModelScope, etc.
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
+    // for viewModel() in Compose
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
+
 }

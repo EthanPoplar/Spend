@@ -1,111 +1,152 @@
+// app/src/main/kotlin/com/example/spend/screens/SpendingScreen.kt
 package com.example.spend.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.lazy.*
-import androidx.compose.material.Button
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Text
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.spend.viewmodel.TransactionViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
-data class SpendingScreen(
-    val date: String,
-    val money: Double,
-    val category: String
-)
+private enum class SortOption(val label: String) {
+    DATE_ASC("Date ↑"),
+    DATE_DESC("Date ↓"),
+    AMOUNT_ASC("Amount ↑"),
+    AMOUNT_DESC("Amount ↓")
+}
 
 @Composable
-fun SpendingScreen() {
+fun SpendingScreen(
+    viewModel: TransactionViewModel,
+    onNavigateBack: () -> Unit,
+    onAddTransaction: () -> Unit,
+    onViewChart: () -> Unit
+) {
+    val context = LocalContext.current
+    val transactions by viewModel.transactions.collectAsState(initial = emptyList())
+
+    // --- Sort menu state ---
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+    var selectedSort by remember { mutableStateOf(SortOption.DATE_ASC) }
+
+    // --- Compute sorted list whenever underlying data or sort choice changes ---
+    val sortedTransactions = remember(transactions, selectedSort) {
+        // helper to parse "d/M/yyyy"
+        fun parseDate(s: String): LocalDate {
+            val fmt = DateTimeFormatter.ofPattern("d/M/yyyy")
+            return LocalDate.parse(s, fmt)
+        }
+
+        when (selectedSort) {
+            SortOption.DATE_ASC   -> transactions.sortedBy { parseDate(it.date) }
+            SortOption.DATE_DESC  -> transactions.sortedByDescending { parseDate(it.date) }
+            SortOption.AMOUNT_ASC -> transactions.sortedBy { it.amount }
+            SortOption.AMOUNT_DESC-> transactions.sortedByDescending { it.amount }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Return Button
-        Button(onClick = { /* Return placeholder */ }) {
-            Text("Return")
+        // --- Top row: Return, Add & Sort ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(onClick = onNavigateBack) {
+                Text("Return")
+            }
+            Button(onClick = onAddTransaction) {
+                Text("Add")
+            }
+            Button(onClick = onViewChart)    {
+                Text("View Chart")
+            }
+            Box {
+                Button(onClick = { sortMenuExpanded = true }) {
+                    Text(selectedSort.label)
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Sort options")
+                }
+                DropdownMenu(
+                    expanded = sortMenuExpanded,
+                    onDismissRequest = { sortMenuExpanded = false }
+                ) {
+                    SortOption.values().forEach { option ->
+                        DropdownMenuItem(onClick = {
+                            selectedSort = option
+                            sortMenuExpanded = false
+                        }) {
+                            Text(option.label)
+                        }
+                    }
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Text(text = "Spending Overview")
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // Dummy chart placeholder
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .background(Color.LightGray),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Chart Placeholder")
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
 
-        var spendingScreen by remember { mutableStateOf(generateSpendingList()) }
-        val context = LocalContext.current
+        Spacer(Modifier.height(16.dp))
 
-        LazyColumn (modifier = Modifier.fillMaxWidth()
-            .height(300.dp), contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(spendingScreen) { item ->
-                Box (modifier = Modifier
-                    .fillMaxWidth().height(50.dp)
-                    .background(Color.White),
-                    contentAlignment = Alignment.CenterStart
-                ){
-                    Row (modifier = Modifier.fillMaxWidth(),
+        // --- Transaction list ---
+        if (sortedTransactions.isEmpty()) {
+            Text("No transactions yet.", style = MaterialTheme.typography.body1)
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(sortedTransactions) { txn ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colors.surface)
+                            .padding(8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = item.date,
-                            modifier = Modifier.weight(0.25f).padding(start = 16.dp)
-                        )
-                        Text(
-                            text = item.category,
-                            modifier = Modifier.weight(0.4f).padding(start = 16.dp)
-                        )
-                        Text(
-                            text = "$%.2f".format(item.money),
-                            modifier = Modifier.weight(0.25f)
-                        )
-                        IconButton(
-                            onClick = {
-                                spendingScreen = spendingScreen.filter { it != item }
-                                Toast.makeText(
-                                    context,
-                                    "Delete successfully",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            },
-                            modifier = Modifier.weight(0.1f).padding(end = 16.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "delete",
-                                tint = Color.Red
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(txn.date, style = MaterialTheme.typography.body1)
+                            Text(txn.description, style = MaterialTheme.typography.body2)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "$${"%.2f".format(txn.amount)}",
+                                style = MaterialTheme.typography.body1
                             )
+                            IconButton(onClick = {
+                                viewModel.removeTransaction(txn)
+                                Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                            }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = Color.Red
+                                )
+                            }
                         }
                     }
                 }
@@ -114,23 +155,15 @@ fun SpendingScreen() {
     }
 }
 
-private fun generateSpendingList(): List<SpendingScreen>{
-    return List(120) { index ->
-        val day = (index / 4) + 1
-        val exactDay = day.toString().padStart(2, '0')
-        val date = "2025-05-$exactDay"
-
-        val money = (Math.random() * 400 + 1.23)
-
-        val categories = listOf("Business", "Education", "Entertainment", "Groceries")
-        val category = categories[(Math.random() * categories.size).toInt()]
-
-        SpendingScreen(date, money, category)
-    }
-}
-
-@Preview()
+@Preview(showBackground = true)
 @Composable
 fun SpendingScreenPreview() {
-    SpendingScreen()
+    val dummyVm = TransactionViewModel()
+    SpendingScreen(
+        viewModel         = dummyVm,
+        onNavigateBack    = {},
+        onAddTransaction  = {},
+        onViewChart       = {}
+    )
 }
+

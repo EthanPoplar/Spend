@@ -1,3 +1,4 @@
+// app/src/main/kotlin/com/example/spend/screens/HomeScreen.kt
 package com.example.spend.screens
 
 import android.net.Uri
@@ -5,30 +6,35 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.Composable
+import com.example.spend.viewmodel.TransactionViewModel
 
 @Composable
 fun HomeScreen(
     onNavigateToForm: () -> Unit,
-    onNavigateToSpending: () -> Unit
+    onNavigateToSpending: () -> Unit,
+    viewModel: TransactionViewModel
 ) {
-    var resultText by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
-    // File picker launcher for bank statement (placeholder functionality)
+    // Observe loading state and transaction count
+    val isProcessing by viewModel.isProcessing.collectAsState()
+    val transactions by viewModel.transactions.collectAsState()
+
+    // Launcher for picking an image
     val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri: Uri? ->
-            uri?.let {
-                val parsedData = parseBankStatementWithAI(it)
-                resultText = "AI Parsed: $parsedData"
-            }
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            viewModel.parseAndAdd(it, context)
         }
-    )
+    }
 
     Column(
         modifier = Modifier
@@ -37,55 +43,45 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Return Button
-        Button(onClick = { /* Return placeholder */ }) {
-            Text("Return")
+        if (isProcessing) {
+            // Show a spinner while OCR is running
+            CircularProgressIndicator()
+            Spacer(Modifier.height(8.dp))
+            Text("Processing bank statement…")
+        } else {
+            // Once idle, show how many items have been imported
+            Text("Imported: ${transactions.size} transactions")
+            Spacer(Modifier.height(16.dp))
+
+            // Upload button
+            Button(
+                onClick = { filePickerLauncher.launch("image/*") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Upload Bank Statement")
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
 
-        Text(text = "Home Screen")
-
-        // Display parsed result if any
-        if (resultText.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = resultText)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                filePickerLauncher.launch("*/*")
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Upload Bank Statement")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = onNavigateToForm,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Go to Form")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+        // Navigate to the Spending screen
         Button(
             onClick = onNavigateToSpending,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("View Spending")
+            Text("View Daily Spend")
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Navigate to the manual-entry Form screen
+        Button(
+            onClick = onNavigateToForm,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Add Transaction Manually")
         }
     }
 }
 
-/**
- * Placeholder function to simulate AI processing on a bank statement.
- */
-fun parseBankStatementWithAI(uri: Uri): String {
-    return "Transactions extracted from $uri"
-}
+

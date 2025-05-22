@@ -1,11 +1,11 @@
+// app/src/main/kotlin/com/example/spend/screens/FormScreen.kt
 package com.example.spend.screens
 
 import android.app.DatePickerDialog
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -13,22 +13,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.spend.model.Transaction
+import com.example.spend.viewmodel.TransactionViewModel
 import java.util.Calendar
-import androidx.compose.runtime.Composable
-import android.widget.Toast
 
 @Composable
-fun FormScreen(onReturnHome: () -> Unit) {
-    var amount by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf("Select Category") }
-    val categories = listOf("Groceries", "Entertainment", "Bills", "Other")
-    var dateText by remember { mutableStateOf("Select Date") }
+fun FormScreen(
+    viewModel: TransactionViewModel,
+    onReturnHome: () -> Unit
+) {
     val context = LocalContext.current
+    var amountText by remember { mutableStateOf("") }
+    var dateText by remember { mutableStateOf("Select Date") }
+    var categoryText by remember { mutableStateOf("") }
+
+    // Date picker setup
     val calendar = Calendar.getInstance()
-    val datePickerDialog = DatePickerDialog(
+    val picker = DatePickerDialog(
         context,
-        { _, year, month, dayOfMonth -> dateText = "$dayOfMonth/${month + 1}/$year" },
+        { _, year, month, day ->
+            dateText = "${day}/${month + 1}/$year"
+        },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
@@ -39,68 +44,60 @@ fun FormScreen(onReturnHome: () -> Unit) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Return Button
-        Button(onClick = { onReturnHome() }) {
+        // Return button
+        Button(onClick = onReturnHome) {
             Text("Return")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Text(text = "Money")
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+        // Amount input
         OutlinedTextField(
-            value = amount,
-            onValueChange = { amount = it },
+            value = amountText,
+            onValueChange = { amountText = it },
             label = { Text("Amount") },
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
+        // Date picker trigger
         Text(
             text = dateText,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { datePickerDialog.show() }
-                .padding(8.dp)
+                .clickable { picker.show() }
+                .padding(12.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = selectedCategory,
-                onValueChange = {},
-                label = { Text("Category") },
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded }
-            )
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                categories.forEach { category ->
-                    DropdownMenuItem(onClick = {
-                        selectedCategory = category
-                        expanded = false
-                    }) {
-                        Text(text = category)
-                    }
-                }
-            }
-        }
+        // Category free-form input
+        OutlinedTextField(
+            value = categoryText,
+            onValueChange = { categoryText = it },
+            label = { Text("Category") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
 
+        // Save button
         Button(
-            onClick = { 
-                val amountValue = amount.toDoubleOrNull()
-                if (amountValue != null && selectedCategory != "Select Category" && dateText != "Select Date") {
-                    val message = "Date: $dateText\nAmount: $amountValue\nCategory: $selectedCategory"
-                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            onClick = {
+                val amt = amountText.toDoubleOrNull()
+                if (amt != null &&
+                    dateText != "Select Date" &&
+                    categoryText.isNotBlank()
+                ) {
+                    viewModel.addTransaction(
+                        Transaction(dateText, categoryText, amt)
+                    )
+                    Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                    onReturnHome()
                 } else {
-                    Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT)
+                        .show()
                 }
             },
             modifier = Modifier.align(Alignment.End)
@@ -109,4 +106,6 @@ fun FormScreen(onReturnHome: () -> Unit) {
         }
     }
 }
+
+
 
