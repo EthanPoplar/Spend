@@ -1,3 +1,4 @@
+// app/src/main/kotlin/com/example/spend/screens/ChartScreen.kt
 package com.example.spend.screens
 
 import androidx.compose.foundation.Canvas
@@ -11,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import com.example.spend.model.Transaction
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 import java.time.temporal.IsoFields
 
 private enum class ChartPeriod { WEEKLY, MONTHLY }
@@ -26,32 +26,31 @@ fun ChartScreen(
     transactions: List<Transaction>,
     onNavigateBack: () -> Unit
 ) {
-    // Read theme color *outside* of Canvas (so it isn't a Composable call inside drawScope)
     val barColor = MaterialTheme.colors.primary
-
-    // State for the toggle
     var chartPeriod by remember { mutableStateOf(ChartPeriod.WEEKLY) }
 
-    // Precompute grouping & averages
-    val fmt = DateTimeFormatter.ofPattern("d/M/yyyy")
     val groups by remember(transactions, chartPeriod) {
         mutableStateOf(
             transactions
                 .groupBy { txn ->
-                    val date = LocalDate.parse(txn.date, fmt)
+                    val date = LocalDate.parse(txn.date) // ISO "YYYY-MM-DD"
                     when (chartPeriod) {
-                        ChartPeriod.WEEKLY  -> "${date.get(IsoFields.WEEK_BASED_YEAR)}-W${date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)}"
-                        ChartPeriod.MONTHLY -> "${date.monthValue}/${date.year}"
+                        ChartPeriod.WEEKLY  ->
+                            "${date.get(IsoFields.WEEK_BASED_YEAR)}-W${date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)}"
+                        ChartPeriod.MONTHLY ->
+                            "${date.monthValue}/${date.year}"
                     }
                 }
                 .map { (label, list) ->
-                    val sum  = list.sumOf { it.amount }
+                    val sum = list.sumOf { it.amount }
                     val days = when (chartPeriod) {
-                        ChartPeriod.WEEKLY  -> 7
-                        ChartPeriod.MONTHLY -> YearMonth.of(
-                            LocalDate.parse(list.first().date, fmt).year,
-                            LocalDate.parse(list.first().date, fmt).monthValue
-                        ).lengthOfMonth()
+                        ChartPeriod.WEEKLY -> 7
+                        ChartPeriod.MONTHLY -> {
+                            // parse the first date in that bucket
+                            val firstDate = LocalDate.parse(list.first().date)
+                            YearMonth.of(firstDate.year, firstDate.monthValue)
+                                .lengthOfMonth()
+                        }
                     }
                     PeriodData(label, sum / days)
                 }
@@ -59,27 +58,32 @@ fun ChartScreen(
         )
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        // Back button
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Button(onClick = onNavigateBack) {
             Text("Back")
         }
         Spacer(Modifier.height(16.dp))
 
-        // Period toggle
         Row {
             ChartPeriod.values().forEach { period ->
                 OutlinedButton(
                     onClick = { chartPeriod = period },
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
-                    Text(period.name.lowercase().replaceFirstChar { it.uppercase() })
+                    Text(
+                        period.name
+                            .lowercase()
+                            .replaceFirstChar { it.uppercase() }
+                    )
                 }
             }
         }
         Spacer(Modifier.height(16.dp))
 
-        // The actual bar chart
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
@@ -90,18 +94,17 @@ fun ChartScreen(
             val maxVal = groups.maxOf { it.avgAmount }.toFloat()
             val barWidth = size.width / groups.size
 
-            groups.forEachIndexed { i, (label, avg) ->
-                val h = (avg.toFloat() / maxVal) * size.height
+            groups.forEachIndexed { i, (_, avg) ->
+                val height = (avg.toFloat() / maxVal) * size.height
                 drawRect(
                     color   = barColor,
-                    topLeft = Offset(i * barWidth, size.height - h),
-                    size    = Size(barWidth * 0.8f, h)
+                    topLeft = Offset(i * barWidth, size.height - height),
+                    size    = Size(barWidth * 0.8f, height)
                 )
-                // if you later want to draw the 'label', you'll need to use
-                // drawContext.canvas.nativeCanvas.drawText(...)
             }
         }
     }
 }
+
 
 

@@ -2,6 +2,7 @@
 package com.example.spend.screens
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -81,7 +82,22 @@ fun HomeScreen(
         ) {
             Text("Add Transaction Manually")
         }
+        Button(onClick = {
+            viewModel.pingOpenAI(
+                onResult = { msg ->
+                    Toast.makeText(context, "Got back: $msg", Toast.LENGTH_SHORT).show()
+                },
+                onError = { err ->
+                    Toast.makeText(context, "Ping error: $err", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }) {
+            Text("Test Connect to GPT")
+        }
+
     }
 }
+
+
 
 

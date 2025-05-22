@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.example.spend.viewmodel.TransactionViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 private enum class SortOption(val label: String) {
     DATE_ASC("Date ↑"),
@@ -46,10 +47,15 @@ fun SpendingScreen(
     val sortedTransactions = remember(transactions, selectedSort) {
         // helper to parse "d/M/yyyy"
         fun parseDate(s: String): LocalDate {
-            val fmt = DateTimeFormatter.ofPattern("d/M/yyyy")
-            return LocalDate.parse(s, fmt)
+            return try {
+                // ISO_LOCAL_DATE will handle "2025-05-22"
+                LocalDate.parse(s, DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (_: DateTimeParseException) {
+                // fallback to your old mobile-style "d/M/yyyy"
+                val fmt = DateTimeFormatter.ofPattern("d/M/yyyy")
+                LocalDate.parse(s, fmt)
+            }
         }
-
         when (selectedSort) {
             SortOption.DATE_ASC   -> transactions.sortedBy { parseDate(it.date) }
             SortOption.DATE_DESC  -> transactions.sortedByDescending { parseDate(it.date) }
