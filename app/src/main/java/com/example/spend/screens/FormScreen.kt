@@ -96,11 +96,11 @@ fun FormScreen(onReturnHome: () -> Unit) {
         Button(
             onClick = { 
                 val amountValue = amount.toDoubleOrNull()
-                if (amountValue != null && selectedCategory != "Select Category" && dataTest != "Select Date") {
-                    val message = "Date: $dataText\nAmount: $amountValue\nCategory: $selectedCategory"
+                if (amountValue != null && selectedCategory != "Select Category" && dateText != "Select Date") {
+                    val message = "Date: $dateText\nAmount: $amountValue\nCategory: $selectedCategory"
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeTest(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Please fill all fields correctly", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier.align(Alignment.End)
