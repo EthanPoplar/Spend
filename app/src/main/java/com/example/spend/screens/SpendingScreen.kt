@@ -278,4 +278,5 @@ private fun generateSpendingList(): List<SpendingScreen>{
 @Composable
 fun SpendingScreenPreview() {
     SpendingScreen()
+
 }
