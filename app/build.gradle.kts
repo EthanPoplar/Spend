@@ -70,4 +70,6 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     // Ensure your test dependencies use the same Compose BOM version
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
+    // On-device text recognition
+    implementation ("com.google.mlkit:text-recognition:16.0.0")
 }
