@@ -88,4 +88,8 @@ dependencies {
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.4")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
 }
+

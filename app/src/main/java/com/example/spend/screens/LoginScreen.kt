@@ -1,93 +1,67 @@
+// app/src/main/kotlin/com/example/spend/screens/LoginScreen.kt
+
 package com.example.spend.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
-import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
-import androidx.compose.material.IconButton
-import androidx.compose.material.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.TextField
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.Composable
 
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onSignUpClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    onGoogleSignIn: () -> Unit
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
+        Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        // Return Button placeholder
-        Button(onClick = { /* Return placeholder */ }) {
-            Text("Return")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(text = "Welcome to Spend")
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("Username") },
+        TextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
             modifier = Modifier.fillMaxWidth()
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
+        Spacer(Modifier.height(8.dp))
+        TextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
-                val description = if (passwordVisible) "Hide password" else "Show password"
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = description)
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = onLoginSuccess,
             modifier = Modifier.fillMaxWidth()
-        ) {
+        )
+        Spacer(Modifier.height(16.dp))
+
+        // Regular login button, still works as before
+        Button(onClick = onLoginSuccess, modifier = Modifier.fillMaxWidth()) {
             Text("Login")
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(onClick = onSignUpClick) {
-            Text("Don't have an account? Sign up")
+        Spacer(Modifier.height(8.dp))
+        // Google-sign-in button now just calls the same callback
+        Button(onClick = onGoogleSignIn, modifier = Modifier.fillMaxWidth()) {
+            Text("Sign in with Google")
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
+        Spacer(Modifier.height(8.dp))
         TextButton(onClick = onForgotPasswordClick) {
             Text("Forgot password?")
+        }
+        Spacer(Modifier.height(4.dp))
+        TextButton(onClick = onSignUpClick) {
+            Text("Don't have an account? Sign up")
         }
     }
 }
