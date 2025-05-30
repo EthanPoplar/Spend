@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.ExperimentalMaterialApi
@@ -30,21 +31,110 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.random.Random
 
-data class SpendingItem(
+data class Transaction(
     val date: String,
     val money: Double,
     val category: String
 )
 
+@Composable
+fun SimpleChart(transactions: List<Transaction>) {
+    val categoryTotals = transactions.groupBy { it.category }
+        .mapValues { (_, list) -> list.sumOf { it.money } }
+
+    if (categoryTotals.isEmpty()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "No transactions to display",
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+            Text(
+                text = "Add some transactions to see the chart",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
+        }
+        return
+    }
+
+    val maxAmount = categoryTotals.values.maxOrNull() ?: 1.0
+    val colors = listOf(
+        Color(0xFF2196F3), Color(0xFF4CAF50), Color(0xFFF44336),
+        Color(0xFFFF9800), Color(0xFF9C27B0)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Spending by Category",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        categoryTotals.entries.forEachIndexed { index, (category, amount) ->
+            val percentage = (amount / maxAmount).coerceAtMost(1.0)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = category,
+                    modifier = Modifier.width(80.dp),
+                    fontSize = 12.sp
+                )
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(20.dp)
+                        .background(Color.LightGray, RoundedCornerShape(10.dp))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(percentage.toFloat())
+                            .background(
+                                colors[index % colors.size],
+                                RoundedCornerShape(10.dp)
+                            )
+                    )
+                }
+
+                Text(
+                    text = "$${String.format("%.0f", amount)}",
+                    modifier = Modifier.width(60.dp),
+                    fontSize = 12.sp
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun SpendingScreen(navController: NavController? = null) {
+fun Transaction(
+    viewModel: Any, // Your existing ViewModel - replace 'Any' with your actual ViewModel type
+    onNavigateBack: () -> Unit,
+    onAddTransaction: () -> Unit,
+    onViewChart: () -> Unit
+) {
     var selectedCategory by remember { mutableStateOf("All") }
     val categories = listOf("All", "Business", "Education", "Entertainment", "Groceries", "Bills")
     var expanded by remember { mutableStateOf(false) }
@@ -58,7 +148,6 @@ fun SpendingScreen(navController: NavController? = null) {
     ) {
         Text(
             text = "Spending Overview",
-            modifier = Modifier,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
@@ -149,78 +238,58 @@ fun SpendingScreen(navController: NavController? = null) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Improved chart placeholder with spending summary
-        var spendingItems by remember { mutableStateOf(generateSpendingList()) }
-        val totalSpent = spendingItems.sumOf { it.money }
-        val averageSpent = if (spendingItems.isNotEmpty()) totalSpent / spendingItems.size else 0.0
+        // TODO: Replace this with your ViewModel call
+        // Example: val allTransactions = viewModel.getAllTransactions()
+        // For now, using empty list - you need to connect your ViewModel here
+        val allTransactions = emptyList<Transaction>() // REPLACE THIS LINE
 
+        val context = LocalContext.current
+
+        // Chart section
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
             elevation = 4.dp
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Spending Summary",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Total: $${String.format("%.2f", totalSpent)}",
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = "Average: $${String.format("%.2f", averageSpent)}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = "Transactions: ${spendingItems.size}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "📊 Chart Placeholder",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
+            SimpleChart(allTransactions)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(onClick = onAddTransaction) {
+                Text("Add Transaction")
+            }
+            Button(onClick = onViewChart) {
+                Text("View Chart")
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        val context = LocalContext.current
-        val currentDate = remember { Calendar.getInstance() }
-
-        val filteredSpending = spendingItems.filter { spendingItem ->
-            val categoryMatch =
-                selectedCategory == "All" || spendingItem.category == selectedCategory
+        val filteredSpending = allTransactions.filter { transaction ->
+            val categoryMatch = selectedCategory == "All" || transaction.category == selectedCategory
             val dateMatch = when (selectedTimeRange) {
                 "All Time" -> true
                 "Last 7 Days" -> {
-                    val itemDate =
-                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(spendingItem.date)
+                    val itemDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(transaction.date)
                     val calendar = Calendar.getInstance()
                     calendar.add(Calendar.DAY_OF_YEAR, -7)
                     itemDate?.after(calendar.time) ?: false
                 }
                 "Last 2 Weeks" -> {
-                    val itemDate =
-                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(spendingItem.date)
+                    val itemDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(transaction.date)
                     val calendar = Calendar.getInstance()
                     calendar.add(Calendar.DAY_OF_YEAR, -14)
                     itemDate?.after(calendar.time) ?: false
                 }
                 "Last Month" -> {
-                    val itemDate =
-                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(spendingItem.date)
+                    val itemDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(transaction.date)
                     val calendar = Calendar.getInstance()
                     calendar.add(Calendar.MONTH, -1)
                     itemDate?.after(calendar.time) ?: false
@@ -230,7 +299,6 @@ fun SpendingScreen(navController: NavController? = null) {
             categoryMatch && dateMatch
         }
 
-        // Show filtered count
         Text(
             text = "Showing ${filteredSpending.size} transactions",
             fontSize = 12.sp,
@@ -243,13 +311,13 @@ fun SpendingScreen(navController: NavController? = null) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f), // Use weight instead of fixed height
+                .weight(1f),
             contentPadding = PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(
                 items = filteredSpending,
-                key = { item -> "${item.date}-${item.category}-${item.money}" } // Add key for performance
+                key = { item -> "${item.date}-${item.category}-${item.money}" }
             ) { item ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -273,17 +341,18 @@ fun SpendingScreen(navController: NavController? = null) {
                             fontSize = 14.sp
                         )
                         Text(
-                            text = "$${String.format("%.2f", item.money)}",
+                            text = "$%.2f".format(item.money),
                             modifier = Modifier.weight(0.25f),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         )
                         IconButton(
                             onClick = {
-                                spendingItems = spendingItems.filter { it != item }
+                                // TODO: Call your ViewModel's delete method
+                                // Example: viewModel.deleteTransaction(item)
                                 Toast.makeText(
                                     context,
-                                    "Transaction deleted",
+                                    "Delete transaction: ${item.category}",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             },
@@ -291,7 +360,7 @@ fun SpendingScreen(navController: NavController? = null) {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete transaction",
+                                contentDescription = "delete",
                                 tint = Color.Red,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -303,45 +372,19 @@ fun SpendingScreen(navController: NavController? = null) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Return Button
-        Button(
-            onClick = {
-                navController?.navigate("home") {
-                    popUpTo("home") { inclusive = true }
-                }
-            }
-        ) {
+        Button(onClick = onNavigateBack) {
             Text("Return")
         }
     }
 }
 
-// Fixed data generation function
-private fun generateSpendingList(): List<SpendingItem> {
-    val items = mutableListOf<SpendingItem>()
-    val categories = listOf("Business", "Education", "Entertainment", "Groceries", "Bills")
-    val calendar = Calendar.getInstance()
-
-    // Generate transactions for the last 30 days
-    repeat(50) { index -> // Reduced from 120 to 50 for better performance
-        calendar.set(2025, Calendar.MAY, 1) // Start from May 1st
-        calendar.add(Calendar.DAY_OF_YEAR, Random.nextInt(30)) // Add random days within May
-
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val date = dateFormat.format(calendar.time)
-
-        val money = Random.nextDouble(5.0, 500.0) // Random amount between $5-$500
-        val category = categories.random()
-
-        items.add(SpendingItem(date, money, category))
-    }
-
-    // Sort by date (newest first)
-    return items.sortedByDescending { it.date }
-}
-
 @Preview
 @Composable
-fun SpendingScreenPreview() {
-    SpendingScreen()
+fun TransactionPreview() {
+    Transaction(
+        viewModel = Any(),
+        onNavigateBack = {},
+        onAddTransaction = {},
+        onViewChart = {}
+    )
 }
