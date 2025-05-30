@@ -31,21 +31,15 @@ fun AppNavigation(
         // LOGIN ROUTE
         composable("login") {
             LoginScreen(
-                onLoginSuccess        = {
+                onLoginSuccess = {
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
                     }
                 },
-                onSignUpClick         = {
-                    navController.navigate("signup")
-                },
-                onForgotPasswordClick = {
-                    navController.navigate("forgotpassword")
-                },
-                onGoogleSignIn        = onGoogleSignIn  // ← call your go-home here
+                onSignUpClick = { navController.navigate("signup") },
+                onForgotPasswordClick = { navController.navigate("forgotpassword") }
             )
         }
-
         // SIGN UP ROUTE
         composable("signup") {
             SignUpScreen(
